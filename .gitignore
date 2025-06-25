@@ -1,0 +1,88 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Go workspace file
+go.work
+
+# Build output
+/tmp/
+/bin/
+/dist/
+
+# Environment variables
+.env
+!.devcontainer/.env
+.env.local
+.env.development
+.env.production
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Air (hot reload) configuration
+.air.toml
+
+# Firebase credentials
+firebase-credentials.json
+*.pem
+*.key
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+.dockerignore
+
+# Temporary files
+*.tmp
+*.temp
+
+# Coverage reports
+coverage.txt
+coverage.html
+coverage.out
+
+# Go module cache
+go.sum.backup
+
+# Local development files
+.local/
+.cache/
+
+# pgAdmin data
+pgadmin_data/
+
+# Docker volumes
+postgres_data/ 
