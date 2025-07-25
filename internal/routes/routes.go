@@ -30,20 +30,31 @@ func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 	categoryHandler := handlers.NewCategoryHandler(db)
 	settlementHandler := handlers.NewSettlementHandler(db)
 
-	// 認證相關路由 (不需要驗證)
+	// 認証相關路由 (不需要驗證)
 	auth := api.Group("/auth")
 	auth.Post("/register", authHandler.Register)
 	auth.Post("/login", authHandler.Login)
 	auth.Post("/refresh", authHandler.RefreshToken)
+	auth.Post("/device-refresh", authHandler.DeviceRefresh)
+	auth.Post("/logout", authHandler.Logout)
 
-	// 需要認證的路由
-	protected := api.Group("/", middleware.JWTMiddleware(cfg.JWTSecret))
+	// 需要認證的路由 - 使用企業級中間件
+	protected := api.Group("/", middleware.EnterpriseJWTMiddleware(cfg.AccessTokenSecret, cfg.RefreshTokenSecret))
 
 	// 用戶相關路由
 	users := protected.Group("/users")
 	users.Get("/me", userHandler.GetProfile)
 	users.Put("/me", userHandler.UpdateProfile)
 	users.Post("/fcm-token", userHandler.UpdateFCMToken)
+
+	// 企業級認證管理路由
+	devices := protected.Group("/devices")
+	devices.Get("/", authHandler.GetUserDevices)
+	devices.Delete("/:deviceId", authHandler.RevokeDevice)
+
+	// 安全事件路由
+	security := protected.Group("/security")
+	security.Get("/events", authHandler.GetSecurityEvents)
 
 	// 群組相關路由
 	groups := protected.Group("/groups")

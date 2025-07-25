@@ -21,18 +21,6 @@ func Init(databaseURL string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	// 自動遷移
-	err = AutoMigrate(db)
-	if err != nil {
-		return nil, err
-	}
-
-	// 建立預設分類
-	err = SeedCategories(db)
-	if err != nil {
-		return nil, err
-	}
-
 	return db, nil
 }
 
@@ -46,6 +34,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.Transaction{},
 		&models.TransactionSplit{},
 		&models.Settlement{},
+		&models.UserSession{},
+		&models.SecurityEvent{},
 	)
 }
 
