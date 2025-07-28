@@ -352,6 +352,7 @@ func (h *TransactionHandler) GetGroupTransactions(c *fiber.Ctx) error {
 		Preload("Creator").
 		Preload("Category").
 		Preload("Splits.User").
+		Preload("Group").
 		Order("created_at DESC").
 		Offset(offset).
 		Limit(limit)
