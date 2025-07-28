@@ -142,7 +142,7 @@ pgAdmin 已經配置在開發環境中：
 連接 PostgreSQL：
 - Host: db
 - Port: 5432
-- Database: split_go_db
+- Database: postgres
 - Username: postgres
 - Password: postgres
 

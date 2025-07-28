@@ -10,6 +10,7 @@ DB_URL ?= postgres://postgres:postgres@db:5432/split_go_db?sslmode=disable
 GREEN=\033[0;32m
 YELLOW=\033[1;33m
 RED=\033[0;31m
+BLUE=\033[0;34m
 NC=\033[0m # No Color
 
 .PHONY: help build run dev migrate migrate-reset migrate-seed clean test
@@ -17,7 +18,7 @@ NC=\033[0m # No Color
 # 預設目標
 help: ## 顯示幫助信息
 	@echo "可用指令:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-15s$(NC) %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}'
 
 # 建置相關
 build: ## 編譯應用程序
@@ -52,10 +53,10 @@ migrate-reset: ## 重置資料庫 (刪除所有資料)
 	$(GO) run $(MIGRATE_CMD) -action=reset
 	@echo "$(GREEN)✅ 資料庫重置完成$(NC)"
 
-migrate-seed: ## 只建立預設資料
-	@echo "$(YELLOW)🌱 建立預設資料...$(NC)"
+migrate-seed: ## 建立完整測試資料 (用戶、群組、交易)
+	@echo "$(YELLOW)🌱 建立完整測試資料...$(NC)"
 	$(GO) run $(MIGRATE_CMD) -action=seed
-	@echo "$(GREEN)✅ 預設資料建立完成$(NC)"
+	@echo "$(GREEN)✅ 完整測試資料建立完成$(NC)"
 
 migrate-custom: ## 使用自定義資料庫 URL 進行遷移 (使用: make migrate-custom DB_URL="your_url")
 	@echo "$(YELLOW)📊 使用自定義 URL 執行遷移...$(NC)"
@@ -101,6 +102,12 @@ docker-build: ## 構建 Docker 映像
 setup: mod-download migrate ## 初始化項目 (下載依賴 + 資料庫遷移)
 	@echo "$(GREEN)🎉 項目設置完成!$(NC)"
 
+setup-dev: mod-download migrate migrate-seed ## 初始化開發環境 (包含測試資料)
+	@echo "$(GREEN)🎉 開發環境設置完成! 包含完整測試資料$(NC)"
+
 # 重置開發環境
-reset-dev: clean migrate-reset setup ## 重置整個開發環境
-	@echo "$(GREEN)🔄 開發環境重置完成!$(NC)" 
+reset-dev: clean migrate-reset migrate-seed ## 重置整個開發環境 (包含測試資料)
+	@echo "$(GREEN)🔄 開發環境重置完成! 包含測試資料$(NC)"
+
+# 快速開發環境
+quick-start: setup-dev dev ## 一鍵啟動完整開發環境 
