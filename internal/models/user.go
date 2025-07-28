@@ -10,15 +10,22 @@ import (
 // User 用戶模型
 type User struct {
 	ID        uint           `json:"id" gorm:"primaryKey"`
-	Email     string         `json:"email" gorm:"uniqueIndex;not null"`
-	Username  string         `json:"username" gorm:"uniqueIndex;not null"`
+	Email     string         `json:"email" gorm:"uniqueIndex;not null;<-:create"`
+	Username  string         `json:"username" gorm:"uniqueIndex;not null;<-:create"`
 	Password  string         `json:"-" gorm:"not null"`
 	Name      string         `json:"name"`
 	Avatar    string         `json:"avatar"`
 	FCMToken  string         `json:"-"` // Firebase Cloud Messaging token
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	CreatedAt time.Time      `json:"created_at" gorm:"autoCreateTime;<-:create"`
+	UpdatedAt time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+}
+
+// UserUpdateRequest 用戶更新請求模型 - 只包含允許更新的欄位
+type UserUpdateRequest struct {
+	Name     string `json:"name"`
+	Avatar   string `json:"avatar"`
+	FCMToken string `json:"fcm_token"`
 }
 
 // UserSession 用戶會話表（企業級核心）

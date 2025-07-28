@@ -167,6 +167,9 @@ func (s *JWTService) GenerateEnterpriseTokens(user models.User, session *models.
 		return nil, err
 	}
 
+	// 將 user 資料填入 session 物件中
+	session.User = user
+
 	return &EnterpriseTokens{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
