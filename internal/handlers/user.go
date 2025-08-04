@@ -87,7 +87,7 @@ func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 }
 
 type UpdateFCMTokenRequest struct {
-	FCMToken string `json:"fcm_token" validate:"required"`
+	FCMToken string `json:"fcm_token"`
 }
 
 // UpdateFCMToken 更新 FCM Token
@@ -106,8 +106,15 @@ func (h *UserHandler) UpdateFCMToken(c *fiber.Ctx) error {
 		)
 	}
 
+	// 驗證 FCM Token 不為空
+	if req.FCMToken == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(
+			responses.ErrorResponse("FCM Token 不能為空"),
+		)
+	}
+
 	// 更新 FCM Token
-	if err := h.db.Model(&user).Update("fcm_token", req.FCMToken).Error; err != nil {
+	if err := h.db.Model(&models.User{}).Where("id = ?", user.UserID).Update("fcm_token", req.FCMToken).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			responses.ErrorResponse("更新 FCM Token 失敗"),
 		)

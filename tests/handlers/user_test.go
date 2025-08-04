@@ -255,32 +255,69 @@ func TestUpdateFCMToken(t *testing.T) {
 	db := setupTestDB()
 	handler := handlers.NewUserHandler(db)
 
+	// 創建測試用戶
+	testUser := createTestUser(db, "fcmtest@example.com", "fcmtestuser")
+
 	app := fiber.New()
+
+	// 設置認證中間件
+	app.Use("/fcm-token", func(c *fiber.Ctx) error {
+		c.Locals("user_id", testUser.ID)
+		return c.Next()
+	})
+
 	app.Post("/fcm-token", handler.UpdateFCMToken)
 
-	t.Run("功能尚未實現", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/fcm-token", nil)
+	t.Run("成功更新 FCM Token", func(t *testing.T) {
+		requestBody := map[string]interface{}{
+			"fcm_token": "test_fcm_token_12345",
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req := httptest.NewRequest("POST", "/fcm-token", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+
 		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("無法執行請求: %v", err)
 		}
 
-		if resp.StatusCode != http.StatusNotImplemented {
-			t.Errorf("期望狀態碼 %d，得到 %d", http.StatusNotImplemented, resp.StatusCode)
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("期望狀態碼 %d，得到 %d", http.StatusOK, resp.StatusCode)
 		}
 
 		var responseBody map[string]interface{}
 		json.NewDecoder(resp.Body).Decode(&responseBody)
 
-		if !responseBody["error"].(bool) {
-			t.Error("期望錯誤標記為 true")
+		if responseBody["error"] != false {
+			t.Error("期望 error 為 false")
 		}
 
-		expectedMessage := "功能尚未實現"
-		if responseBody["message"] != expectedMessage {
-			t.Errorf("期望錯誤訊息 %s，得到 %s", expectedMessage, responseBody["message"])
+		expectedMessage := "FCM Token 更新成功"
+		if message := responseBody["message"]; message != expectedMessage {
+			t.Errorf("期望成功訊息 '%s'，得到 '%s'", expectedMessage, message)
 		}
 	})
+
+	t.Run("缺少 FCM Token", func(t *testing.T) {
+		requestBody := map[string]interface{}{}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req := httptest.NewRequest("POST", "/fcm-token", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("無法執行請求: %v", err)
+		}
+
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Errorf("期望狀態碼 %d，得到 %d", http.StatusBadRequest, resp.StatusCode)
+		}
+	})
+
+	// 清理
+	db.Delete(testUser)
 }
 
 // 測試用戶創建輔助函數

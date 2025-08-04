@@ -79,6 +79,13 @@ func (h *SettlementHandler) CreateSettlement(c *fiber.Ctx) error {
 		)
 	}
 
+	// 驗證金額
+	if req.Amount <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(
+			responses.ErrorResponse("金額必須大於零"),
+		)
+	}
+
 	// 驗證用戶是群組成員
 	_, err = middleware.RequireGroupMember(c, h.db, req.GroupID)
 	if err != nil {
