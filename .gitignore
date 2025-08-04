@@ -85,4 +85,11 @@ go.sum.backup
 pgadmin_data/
 
 # Docker volumes
-postgres_data/ 
+postgres_data/
+
+# Swagger 自動生成的文件
+docs/docs.go
+docs/swagger.json
+docs/swagger.yaml
+# 但保留手寫的文檔
+!docs/swagger-guide.md 

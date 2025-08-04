@@ -2,17 +2,17 @@
 
 一個使用 Go Fiber 框架開發的分帳記帳系統後端 API。
 
-## 功能特色
+## ✨ 功能特色
 
-- 🔐 用戶註冊/登入 (JWT 認證)
+- 🔐 用戶註冊/登入 (JWT 認證 + 設備管理)
 - 👥 群組管理 (建立、加入、管理分帳群組)
 - 💰 交易記錄 (新增、修改、刪除支出記錄)
 - 📊 複雜分帳邏輯 (平均分、按比例分、固定金額分)
-- ⚖️ 自動平衡計算 (計算每個人應付/應收金額)
+- ⚖️ 自動平衡計算與結算建議
 - 🔔 Firebase 推播通知
-- 📱 為 Flutter 前端提供完整 API
+- 📖 完整 Swagger API 文檔
 
-## 技術棧
+## 🛠 技術棧
 
 - **Go Fiber** - Web 框架
 - **GORM** - ORM 資料庫操作
@@ -21,9 +21,9 @@
 - **Firebase** - 推播通知
 - **Docker** - 容器化開發
 
-## 快速開始
+## 🚀 快速開始
 
-### 1. 複製專案
+### 1. 克隆專案
 
 ```bash
 git clone <repository-url>
@@ -36,11 +36,6 @@ cd split-go
 
 ```bash
 # 資料庫設定
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=split_go_db
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
 DATABASE_URL=postgres://postgres:postgres@db:5432/split_go_db?sslmode=disable
 
 # 應用程式設定
@@ -48,169 +43,120 @@ APP_PORT=3000
 JWT_SECRET=your_jwt_secret_key_here_please_change_this_in_production
 APP_ENV=development
 
-# Firebase 設定 (推播通知用)
+# Firebase 設定
 FIREBASE_PROJECT_ID=your_firebase_project_id
 FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
-
-# pgAdmin 設定
-PGADMIN_DEFAULT_EMAIL=admin@example.com
-PGADMIN_DEFAULT_PASSWORD=admin
 ```
 
-### 3. 開發容器啟動
-
-如果使用 VS Code Dev Container：
-
-1. 在 VS Code 中打開專案
-2. 按 `Ctrl+Shift+P` (Windows/Linux) 或 `Cmd+Shift+P` (Mac)
-3. 選擇 "Dev Containers: Reopen in Container"
-
-或者使用 Docker Compose：
+### 3. 一鍵啟動開發環境
 
 ```bash
-docker-compose -f .devcontainer/docker-compose.yml up -d
-```
+# 初始化開發環境 (包含測試資料)
+make setup-dev
 
-### 4. 安裝依賴
-
-```bash
-go mod tidy
-```
-
-### 5. 運行應用程式
-
-```bash
-go run cmd/api/main.go
-```
-
-或使用 Air 進行熱重載：
-
-```bash
-air
+# 啟動開發服務器 (熱重載)
+make dev
 ```
 
 ## 📖 API 文檔
 
-### 🌐 Swagger API 文檔
-
-專案使用 Swagger 自動生成完整的 API 文檔，提供互動式測試界面：
+### Swagger 文檔
 
 ```bash
+# 生成 API 文檔
+make docs
+
 # 啟動服務器
-go run cmd/api/main.go
+make run
 
-# 訪問 Swagger UI (推薦)
+# 訪問 Swagger UI
 http://localhost:3000/swagger/index.html
-
-# 獲取 JSON 格式文檔
-http://localhost:3000/swagger/doc.json
 ```
 
-#### 重新生成文檔
+### 主要 API 端點
 
-修改 API 註解後重新生成文檔：
+| 分類 | 端點 | 說明 |
+|------|------|------|
+| **認證** | `POST /auth/register` | 用戶註冊 |
+| | `POST /auth/login` | 用戶登入 |
+| | `POST /auth/refresh` | 刷新令牌 |
+| **用戶** | `GET /users/me` | 獲取個人資料 |
+| | `PUT /users/me` | 更新個人資料 |
+| **群組** | `GET /groups` | 獲取群組列表 |
+| | `POST /groups` | 創建群組 |
+| | `GET /groups/:id` | 獲取群組詳情 |
+| **交易** | `GET /transactions` | 獲取交易列表 |
+| | `POST /transactions` | 創建交易 |
+| | `GET /groups/:id/balance` | 獲取群組平衡 |
+| **結算** | `GET /settlements` | 獲取結算記錄 |
+| | `POST /settlements` | 創建結算 |
+| | `GET /groups/:id/settlement-suggestions` | 獲取結算建議 |
+
+> 完整 API 文檔請查看 Swagger UI
+
+## 🔧 開發指令
 
 ```bash
-# 使用自動化腳本（推薦）
-./scripts/generate-docs.sh
+# 查看所有可用指令
+make help
 
-# 或手動生成
-swag init -g cmd/api/main.go -o docs
+# 開發相關
+make dev                    # 熱重載開發模式
+make test                   # 運行測試
+make build                  # 編譯應用
+
+# 資料庫相關
+make migrate                # 執行資料庫遷移
+make migrate-seed           # 建立測試資料
+make migrate-reset          # 重置資料庫
+
+# 文檔相關
+make docs                   # 生成 API 文檔
+make docs-clean             # 清理文檔
+
+# 環境管理
+make setup-dev              # 初始化開發環境
+make reset-dev              # 重置開發環境
+make quick-start            # 一鍵啟動完整環境
 ```
 
-詳細的 Swagger 註解指南請參考：`docs/swagger-guide.md`
-
-### 🔗 API 端點概覽
-
-#### 認證相關
-
-- `POST /api/v1/auth/register` - 用戶註冊
-- `POST /api/v1/auth/login` - 用戶登入
-- `POST /api/v1/auth/refresh` - 刷新 Token
-
-### 用戶相關
-
-- `GET /api/v1/users/me` - 獲取個人資料
-- `PUT /api/v1/users/me` - 更新個人資料
-- `POST /api/v1/users/fcm-token` - 更新推播 Token
-
-### 群組相關
-
-- `GET /api/v1/groups` - 獲取用戶群組列表
-- `POST /api/v1/groups` - 創建新群組
-- `GET /api/v1/groups/:id` - 獲取群組詳情
-- `PUT /api/v1/groups/:id` - 更新群組資訊
-- `DELETE /api/v1/groups/:id` - 刪除群組
-- `POST /api/v1/groups/:id/members` - 添加群組成員
-- `DELETE /api/v1/groups/:id/members/:userId` - 移除群組成員
-
-### 交易相關
-
-- `GET /api/v1/transactions` - 獲取交易列表
-- `POST /api/v1/transactions` - 創建新交易
-- `GET /api/v1/transactions/:id` - 獲取交易詳情
-- `PUT /api/v1/transactions/:id` - 更新交易
-- `DELETE /api/v1/transactions/:id` - 刪除交易
-- `GET /api/v1/groups/:id/transactions` - 獲取群組交易
-- `GET /api/v1/groups/:id/balance` - 獲取群組平衡
-
-### 結算相關
-
-- `GET /api/v1/settlements` - 獲取結算記錄
-- `POST /api/v1/settlements` - 創建結算
-- `PUT /api/v1/settlements/:id/paid` - 標記已付款
-- `DELETE /api/v1/settlements/:id` - 取消結算
-- `GET /api/v1/groups/:id/settlement-suggestions` - 獲取結算建議
-
-## 資料庫管理
-
-pgAdmin 已經配置在開發環境中：
-
-- URL: http://localhost:5050
-- Email: admin@example.com
-- Password: admin
-
-連接 PostgreSQL：
-- Host: db
-- Port: 5432
-- Database: postgres
-- Username: postgres
-- Password: postgres
-
-## 專案結構
+## 🗂️ 專案結構
 
 ```
 split-go/
 ├── cmd/api/                # 應用程式入口
 ├── internal/
-│   ├── config/             # 配置管理
-│   ├── database/           # 資料庫連接與遷移
 │   ├── handlers/           # HTTP 處理器
 │   ├── middleware/         # 中介軟體
 │   ├── models/             # 資料模型
-│   ├── routes/             # 路由配置
-│   └── utils/              # 工具函數
+│   ├── services/           # 業務邏輯服務
+│   ├── responses/          # API 回應格式
+│   └── routes/             # 路由配置
+├── tests/                  # 測試文件
+├── docs/                   # API 文檔
 ├── .devcontainer/          # 開發容器配置
-├── go.mod                  # Go 模組文件
-└── README.md
+└── Makefile               # 開發指令
 ```
 
-## 開發注意事項
+## 🔍 資料庫管理
 
-1. **JWT Secret**: 請在生產環境中使用強密碼
-2. **資料庫密碼**: 請在生產環境中修改預設密碼
-3. **Firebase**: 需要配置 Firebase 項目並下載憑證文件
-4. **埠口**: 確保 3000, 5432, 5050 埠口未被占用
+pgAdmin 已配置在開發環境：
 
-## 後續開發
+- **URL**: http://localhost:5050
+- **帳號**: admin@example.com / admin
+- **資料庫連接**: db:5432 / postgres / postgres
 
-- [ ] 完善所有 API 端點
-- [ ] 添加單元測試
-- [ ] 實現複雜分帳算法
-- [ ] Firebase 推播通知整合
-- [ ] API 文檔自動生成
-- [ ] 部署配置
+## ⚠️ 生產環境注意事項
 
-## 貢獻
+1. **JWT Secret**: 使用強密碼替換 `JWT_SECRET`
+2. **資料庫密碼**: 修改預設的資料庫密碼
+3. **Firebase**: 配置正式的 Firebase 專案憑證
+4. **HTTPS**: 生產環境請使用 HTTPS
+
+## 🤝 貢獻
 
 歡迎提交 Issue 和 Pull Request！
+
+---
+
+更多詳細資訊請參考專案內的文檔或 Swagger API 文檔。
