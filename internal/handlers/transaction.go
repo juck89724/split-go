@@ -6,17 +6,22 @@ import (
 	"split-go/internal/middleware"
 	"split-go/internal/models"
 	"split-go/internal/responses"
+	"split-go/internal/services"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
 type TransactionHandler struct {
-	db *gorm.DB
+	db             *gorm.DB
+	balanceService *services.BalanceService
 }
 
 func NewTransactionHandler(db *gorm.DB) *TransactionHandler {
-	return &TransactionHandler{db: db}
+	return &TransactionHandler{
+		db:             db,
+		balanceService: services.NewBalanceService(db),
+	}
 }
 
 func (h *TransactionHandler) GetTransactions(c *fiber.Ctx) error {
@@ -379,9 +384,33 @@ func (h *TransactionHandler) GetGroupTransactions(c *fiber.Ctx) error {
 }
 
 func (h *TransactionHandler) GetGroupBalance(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusNotImplemented).JSON(
-		responses.ErrorResponse("功能尚未實現"),
-	)
+	// 解析群組 ID
+	groupID, err := middleware.ParseGroupIDFromParams(c)
+	if err != nil {
+		return err
+	}
+
+	// 驗證用戶是群組成員
+	_, err = middleware.RequireGroupMember(c, h.db, groupID)
+	if err != nil {
+		return err
+	}
+
+	// 計算群組內每個用戶的平衡
+	balances, err := h.balanceService.CalculateGroupBalances(groupID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(
+			responses.ErrorResponse("計算群組平衡失敗"),
+		)
+	}
+
+	// 轉換為回應格式
+	balanceResponses := make([]responses.BalanceResponse, len(balances))
+	for i, balance := range balances {
+		balanceResponses[i] = responses.NewBalanceResponse(balance)
+	}
+
+	return c.JSON(responses.SuccessResponse(balanceResponses))
 }
 
 // ============ 共用函數 ============
