@@ -13,7 +13,7 @@ RED=\033[0;31m
 BLUE=\033[0;34m
 NC=\033[0m # No Color
 
-.PHONY: help build run dev migrate migrate-reset migrate-seed clean test
+.PHONY: help build run dev migrate migrate-reset migrate-seed clean test docs docs-clean docs-serve
 
 # 預設目標
 help: ## 顯示幫助信息
@@ -110,4 +110,37 @@ reset-dev: clean migrate-reset migrate-seed ## 重置整個開發環境 (包含�
 	@echo "$(GREEN)🔄 開發環境重置完成! 包含測試資料$(NC)"
 
 # 快速開發環境
-quick-start: setup-dev dev ## 一鍵啟動完整開發環境 
+quick-start: setup-dev dev ## 一鍵啟動完整開發環境
+
+# 文檔相關
+docs: ## 生成 Swagger API 文檔
+	@echo "$(YELLOW)🚀 開始生成 Split Go API 文檔...$(NC)"
+	@if ! command -v swag > /dev/null 2>&1; then \
+		echo "$(YELLOW)📦 安裝 swag CLI 工具...$(NC)"; \
+		$(GO) install github.com/swaggo/swag/cmd/swag@latest; \
+	fi
+	@echo "$(YELLOW)📝 生成 Swagger 文檔...$(NC)"
+	@swag init -g $(API_CMD) -o docs --parseInternal
+	@if [ -f "docs/swagger.json" ]; then \
+		echo "$(GREEN)✅ 文檔生成成功！$(NC)"; \
+		echo ""; \
+		echo "$(BLUE)📄 生成的文件:$(NC)"; \
+		ls -la docs/; \
+		echo ""; \
+		echo "$(BLUE)🌐 訪問文檔:$(NC)"; \
+		echo "   Swagger UI: http://localhost:3000/swagger/index.html"; \
+		echo "   JSON 文檔:  http://localhost:3000/swagger/doc.json"; \
+		echo ""; \
+		echo "$(BLUE)🚀 啟動服務器: make run$(NC)"; \
+	else \
+		echo "$(RED)❌ 文檔生成失敗！$(NC)"; \
+		exit 1; \
+	fi
+
+docs-clean: ## 清理生成的文檔
+	@echo "$(YELLOW)🧹 清理 Swagger 文檔...$(NC)"
+	@rm -rf docs/docs.go docs/swagger.json docs/swagger.yaml
+	@echo "$(GREEN)✅ 文檔清理完成$(NC)"
+
+docs-serve: docs run ## 生成文檔並啟動服務器
+	@echo "$(GREEN)🎉 文檔已生成，服務器正在運行$(NC)" 

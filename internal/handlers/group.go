@@ -20,6 +20,15 @@ func NewGroupHandler(db *gorm.DB) *GroupHandler {
 }
 
 // GetUserGroups 獲取用戶加入的所有群組
+// @Summary 獲取用戶群組列表
+// @Description 獲取當前用戶加入的所有群組，包含創建者資訊
+// @Tags 群組
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} object{error=bool,message=string,data=[]object{id=int,name=string,description=string,created_by=int,creator=object{id=int,name=string,username=string},created_at=string,updated_at=string}} "群組列表"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /groups [get]
 func (h *GroupHandler) GetUserGroups(c *fiber.Ctx) error {
 	// 驗證用戶身份
 	authUser, err := middleware.GetCurrentUser(c, h.db)
@@ -57,6 +66,18 @@ type CreateGroupRequest struct {
 }
 
 // CreateGroup 創建新群組
+// @Summary 創建新群組
+// @Description 創建一個新的群組，創建者自動成為群組管理員
+// @Tags 群組
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body object{name=string,description=string} true "群組資料"
+// @Success 201 {object} object{error=bool,message=string,data=object{id=int,name=string,description=string,created_by=int,creator=object{id=int,name=string,username=string},created_at=string,updated_at=string}} "群組創建成功"
+// @Failure 400 {object} object{error=bool,message=string} "請求格式錯誤或群組名稱為空"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /groups [post]
 func (h *GroupHandler) CreateGroup(c *fiber.Ctx) error {
 	// 驗證用戶身份
 	authUser, err := middleware.GetCurrentUser(c, h.db)
@@ -138,6 +159,18 @@ func (h *GroupHandler) CreateGroup(c *fiber.Ctx) error {
 }
 
 // GetGroup 獲取群組詳細資訊
+// @Summary 獲取群組詳細資訊
+// @Description 獲取群組的詳細信息，包含成員列表和當前用戶角色
+// @Tags 群組
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "群組ID"
+// @Success 200 {object} object{error=bool,data=object{group=object{id=int,name=string,description=string,created_by=int,creator=object{id=int,name=string,username=string},created_at=string,updated_at=string},members=[]object{id=int,name=string,username=string,avatar=string},current_user_role=string}} "群組詳細資訊"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 403 {object} object{error=bool,message=string} "不是群組成員"
+// @Failure 404 {object} object{error=bool,message=string} "群組不存在"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /groups/{id} [get]
 func (h *GroupHandler) GetGroup(c *fiber.Ctx) error {
 	// 解析群組ID
 	groupID, err := middleware.ParseGroupIDFromParams(c)
@@ -199,6 +232,21 @@ type UpdateGroupRequest struct {
 }
 
 // UpdateGroup 更新群組資訊（需要管理員權限）
+// @Summary 更新群組資訊
+// @Description 更新群組的名稱和描述，需要管理員權限
+// @Tags 群組
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "群組ID"
+// @Param request body object{name=string,description=string} true "更新資料"
+// @Success 200 {object} object{error=bool,message=string,data=object{id=int,name=string,description=string,created_by=int,creator=object{id=int,name=string,username=string},created_at=string,updated_at=string}} "群組更新成功"
+// @Failure 400 {object} object{error=bool,message=string} "請求格式錯誤或群組名稱為空"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 403 {object} object{error=bool,message=string} "沒有管理員權限"
+// @Failure 404 {object} object{error=bool,message=string} "群組不存在"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /groups/{id} [put]
 func (h *GroupHandler) UpdateGroup(c *fiber.Ctx) error {
 	// 解析群組ID
 	groupID, err := middleware.ParseGroupIDFromParams(c)
@@ -262,6 +310,18 @@ func (h *GroupHandler) UpdateGroup(c *fiber.Ctx) error {
 }
 
 // DeleteGroup 刪除群組（只有創建者可以刪除）
+// @Summary 刪除群組
+// @Description 刪除群組及其所有相關資料，只有創建者可以執行此操作
+// @Tags 群組
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "群組ID"
+// @Success 200 {object} object{error=bool,message=string} "群組刪除成功"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 403 {object} object{error=bool,message=string} "只有群組創建者可以刪除群組"
+// @Failure 404 {object} object{error=bool,message=string} "群組不存在"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /groups/{id} [delete]
 func (h *GroupHandler) DeleteGroup(c *fiber.Ctx) error {
 	// 解析群組ID
 	groupID, err := middleware.ParseGroupIDFromParams(c)
@@ -336,6 +396,22 @@ type AddMemberRequest struct {
 }
 
 // AddMember 添加群組成員
+// @Summary 添加群組成員
+// @Description 向群組添加新成員，需要管理員權限
+// @Tags 群組
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "群組ID"
+// @Param request body object{user_id=int,role=string} true "成員資料，role可選值：member, admin"
+// @Success 201 {object} object{error=bool,message=string,data=object{user_id=int,role=string}} "成員添加成功"
+// @Failure 400 {object} object{error=bool,message=string} "請求格式錯誤或用戶ID為空"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 403 {object} object{error=bool,message=string} "沒有管理員權限"
+// @Failure 404 {object} object{error=bool,message=string} "群組或用戶不存在"
+// @Failure 409 {object} object{error=bool,message=string} "用戶已是群組成員"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /groups/{id}/members [post]
 func (h *GroupHandler) AddMember(c *fiber.Ctx) error {
 	// 解析群組ID
 	groupID, err := middleware.ParseGroupIDFromParams(c)
@@ -416,6 +492,19 @@ func (h *GroupHandler) AddMember(c *fiber.Ctx) error {
 }
 
 // RemoveMember 移除群組成員（需要管理員權限）
+// @Summary 移除群組成員
+// @Description 從群組中移除成員，需要管理員權限，不能移除創建者
+// @Tags 群組
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "群組ID"
+// @Param userId path int true "要移除的用戶ID"
+// @Success 200 {object} object{error=bool,message=string} "成員移除成功"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 403 {object} object{error=bool,message=string} "沒有管理員權限或不能移除創建者"
+// @Failure 404 {object} object{error=bool,message=string} "群組或成員不存在"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /groups/{id}/members/{userId} [delete]
 func (h *GroupHandler) RemoveMember(c *fiber.Ctx) error {
 	// 解析群組ID
 	groupID, err := middleware.ParseGroupIDFromParams(c)

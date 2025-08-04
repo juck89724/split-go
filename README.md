@@ -89,9 +89,40 @@ go run cmd/api/main.go
 air
 ```
 
-## API 文檔
+## 📖 API 文檔
 
-### 認證相關
+### 🌐 Swagger API 文檔
+
+專案使用 Swagger 自動生成完整的 API 文檔，提供互動式測試界面：
+
+```bash
+# 啟動服務器
+go run cmd/api/main.go
+
+# 訪問 Swagger UI (推薦)
+http://localhost:3000/swagger/index.html
+
+# 獲取 JSON 格式文檔
+http://localhost:3000/swagger/doc.json
+```
+
+#### 重新生成文檔
+
+修改 API 註解後重新生成文檔：
+
+```bash
+# 使用自動化腳本（推薦）
+./scripts/generate-docs.sh
+
+# 或手動生成
+swag init -g cmd/api/main.go -o docs
+```
+
+詳細的 Swagger 註解指南請參考：`docs/swagger-guide.md`
+
+### 🔗 API 端點概覽
+
+#### 認證相關
 
 - `POST /api/v1/auth/register` - 用戶註冊
 - `POST /api/v1/auth/login` - 用戶登入

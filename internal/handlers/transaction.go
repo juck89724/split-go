@@ -26,6 +26,16 @@ func NewTransactionHandler(db *gorm.DB) *TransactionHandler {
 	}
 }
 
+// GetTransactions 獲取用戶參與的所有交易
+// @Summary 獲取交易列表
+// @Description 獲取當前用戶參與的所有交易（作為付款者或分帳參與者）
+// @Tags 交易
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} object{error=bool,data=[]object{id=int,description=string,amount=number,split_type=string,paid_by=int,group_id=int,category_id=int,receipt_url=string,created_at=string,updated_at=string,payer=object{id=int,name=string,username=string},creator=object{id=int,name=string,username=string},category=object{id=int,name=string},group=object{id=int,name=string},splits=[]object{id=int,user_id=int,amount=number,percentage=number,user=object{id=int,name=string,username=string}}}} "交易列表"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /transactions [get]
 func (h *TransactionHandler) GetTransactions(c *fiber.Ctx) error {
 	user, err := middleware.GetCurrentUser(c, h.db)
 	if err != nil {
@@ -60,6 +70,20 @@ func (h *TransactionHandler) GetTransactions(c *fiber.Ctx) error {
 	return c.JSON(responses.SuccessResponse(transactionResponses))
 }
 
+// CreateTransaction 創建新交易
+// @Summary 創建新交易
+// @Description 在群組中創建一筆新的交易，支援多種分帳方式
+// @Tags 交易
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body object{description=string,amount=number,split_type=string,paid_by=int,group_id=int,category_id=int,receipt_url=string,splits=[]object{user_id=int,amount=number,percentage=number}} true "交易資料"
+// @Success 201 {object} object{error=bool,message=string,data=object{id=int,description=string,amount=number,split_type=string,paid_by=int,group_id=int,category_id=int,receipt_url=string,created_at=string,updated_at=string,payer=object{id=int,name=string,username=string},creator=object{id=int,name=string,username=string},category=object{id=int,name=string},group=object{id=int,name=string},splits=[]object{id=int,user_id=int,amount=number,percentage=number,user=object{id=int,name=string,username=string}}}} "交易創建成功"
+// @Failure 400 {object} object{error=bool,message=string} "請求格式錯誤或參數無效"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 403 {object} object{error=bool,message=string} "不是群組成員"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /transactions [post]
 func (h *TransactionHandler) CreateTransaction(c *fiber.Ctx) error {
 	// 1. 取得當前用戶
 	user, err := middleware.GetCurrentUser(c, h.db)
@@ -190,6 +214,22 @@ func (h *TransactionHandler) CreateTransaction(c *fiber.Ctx) error {
 	)
 }
 
+// UpdateTransaction 更新交易
+// @Summary 更新交易
+// @Description 更新交易信息，只有創庺者可以更新
+// @Tags 交易
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "交易ID"
+// @Param request body object{description=string,amount=number,category_id=int,receipt_url=string,splits=[]object{user_id=int,amount=number,percentage=number}} true "更新資料"
+// @Success 200 {object} object{error=bool,message=string,data=object{id=int,description=string,amount=number,split_type=string,paid_by=int,group_id=int,category_id=int,receipt_url=string,created_at=string,updated_at=string,payer=object{id=int,name=string,username=string},creator=object{id=int,name=string,username=string},category=object{id=int,name=string},group=object{id=int,name=string},splits=[]object{id=int,user_id=int,amount=number,percentage=number,user=object{id=int,name=string,username=string}}}} "交易更新成功"
+// @Failure 400 {object} object{error=bool,message=string} "請求格式錯誤或參數無效"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 403 {object} object{error=bool,message=string} "只有創庺者可以更新交易"
+// @Failure 404 {object} object{error=bool,message=string} "交易不存在"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /transactions/{id} [put]
 func (h *TransactionHandler) UpdateTransaction(c *fiber.Ctx) error {
 	// 1. 解析交易 ID
 	transactionID, err := middleware.ParseTransactionIDFromParams(c)
@@ -285,6 +325,19 @@ func (h *TransactionHandler) UpdateTransaction(c *fiber.Ctx) error {
 }
 
 // GetTransaction 使用新的共用函數來示範用法
+// GetTransaction 獲取單個交易
+// @Summary 獲取交易詳細資訊
+// @Description 獲取指定交易的詳細信息，包括分帳詳情
+// @Tags 交易
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "交易ID"
+// @Success 200 {object} object{error=bool,data=object{id=int,description=string,amount=number,split_type=string,paid_by=int,group_id=int,category_id=int,receipt_url=string,created_at=string,updated_at=string,payer=object{id=int,name=string,username=string},creator=object{id=int,name=string,username=string},category=object{id=int,name=string},group=object{id=int,name=string},splits=[]object{id=int,user_id=int,amount=number,percentage=number,user=object{id=int,name=string,username=string}}}} "交易詳細資訊"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 403 {object} object{error=bool,message=string} "不是群組成員"
+// @Failure 404 {object} object{error=bool,message=string} "交易不存在"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /transactions/{id} [get]
 func (h *TransactionHandler) GetTransaction(c *fiber.Ctx) error {
 	// 1. 解析交易 ID
 	transactionID, err := middleware.ParseTransactionIDFromParams(c)
@@ -324,6 +377,19 @@ func (h *TransactionHandler) GetTransaction(c *fiber.Ctx) error {
 	return c.JSON(responses.SuccessResponse(transactionResponse))
 }
 
+// DeleteTransaction 刪除交易
+// @Summary 刪除交易
+// @Description 刪除交易，只有創庺者可以刪除
+// @Tags 交易
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "交易ID"
+// @Success 200 {object} object{error=bool,message=string} "交易刪除成功"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 403 {object} object{error=bool,message=string} "只有創庺者可以刪除交易"
+// @Failure 404 {object} object{error=bool,message=string} "交易不存在"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /transactions/{id} [delete]
 func (h *TransactionHandler) DeleteTransaction(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusMethodNotAllowed).JSON(
 		responses.ErrorResponse("刪除交易功能未提供"),
@@ -331,6 +397,19 @@ func (h *TransactionHandler) DeleteTransaction(c *fiber.Ctx) error {
 }
 
 // GetGroupTransactions 示範完整的群組交易查詢邏輯
+// GetGroupTransactions 獲取群組交易
+// @Summary 獲取群組交易列表
+// @Description 獲取指定群組的所有交易記錄
+// @Tags 交易
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "群組ID"
+// @Success 200 {object} object{error=bool,data=[]object{id=int,description=string,amount=number,split_type=string,paid_by=int,group_id=int,category_id=int,receipt_url=string,created_at=string,updated_at=string,payer=object{id=int,name=string,username=string},creator=object{id=int,name=string,username=string},category=object{id=int,name=string},group=object{id=int,name=string},splits=[]object{id=int,user_id=int,amount=number,percentage=number,user=object{id=int,name=string,username=string}}}} "群組交易列表"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 403 {object} object{error=bool,message=string} "不是群組成員"
+// @Failure 404 {object} object{error=bool,message=string} "群組不存在"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /groups/{id}/transactions [get]
 func (h *TransactionHandler) GetGroupTransactions(c *fiber.Ctx) error {
 	// 1. 解析群組 ID
 	groupID, err := middleware.ParseGroupIDFromParams(c)
@@ -385,6 +464,19 @@ func (h *TransactionHandler) GetGroupTransactions(c *fiber.Ctx) error {
 	return c.JSON(responses.SuccessResponse(paginatedResponse))
 }
 
+// GetGroupBalance 獲取群組總欠
+// @Summary 獲取群組總欠
+// @Description 獲取群組中每個成員的總欠情況
+// @Tags 交易
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "群組ID"
+// @Success 200 {object} object{error=bool,data=[]object{user_id=int,name=string,username=string,net_balance=number}} "群組總欠情況"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 403 {object} object{error=bool,message=string} "不是群組成員"
+// @Failure 404 {object} object{error=bool,message=string} "群組不存在"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /groups/{id}/balance [get]
 func (h *TransactionHandler) GetGroupBalance(c *fiber.Ctx) error {
 	// 解析群組 ID
 	groupID, err := middleware.ParseGroupIDFromParams(c)

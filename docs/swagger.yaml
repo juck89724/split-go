@@ -1,0 +1,2608 @@
+basePath: /api/v1
+definitions:
+  handlers.EnterpriseLoginRequest:
+    properties:
+      device_fingerprint:
+        $ref: '#/definitions/services.DeviceFingerprint'
+      device_name:
+        type: string
+      device_type:
+        description: mobile/desktop/tablet
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  services.DeviceFingerprint:
+    properties:
+      ip_address:
+        type: string
+      language:
+        type: string
+      platform:
+        type: string
+      screen:
+        additionalProperties:
+          type: integer
+        type: object
+      timezone:
+        type: string
+      user_agent:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact:
+    email: support@split-go.com
+    name: Split Go API Support
+    url: http://www.split-go.com/support
+  description: 分帳系統 API 文檔 - 支援群組管理、交易記錄、結算功能
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Split Go API
+  version: "1.0"
+paths:
+  /auth/device-refresh:
+    post:
+      consumes:
+      - application/json
+      description: 使用設備指紋進行刷新，適用於記住登入狀態的場景
+      parameters:
+      - description: 設備刷新請求
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            device_fingerprint:
+              properties:
+                ip_address:
+                  type: string
+                language:
+                  type: string
+                platform:
+                  type: string
+                screen_resolution:
+                  type: string
+                timezone:
+                  type: string
+                user_agent:
+                  type: string
+              type: object
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 刷新成功，返回新的令牌對
+          schema:
+            properties:
+              data:
+                properties:
+                  access_token:
+                    type: string
+                  device_token:
+                    type: string
+                  expires_in:
+                    type: integer
+                  refresh_token:
+                    type: string
+                  session:
+                    properties:
+                      device_name:
+                        type: string
+                      device_type:
+                        type: string
+                      expires_at:
+                        type: string
+                      id:
+                        type: string
+                      last_activity:
+                        type: string
+                    type: object
+                  user:
+                    properties:
+                      avatar:
+                        type: string
+                      email:
+                        type: string
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                type: object
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "400":
+          description: 請求格式錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 設備認證失敗
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      summary: 設備級刷新令牌
+      tags:
+      - 認證
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 使用 email 和密碼登入系統，支援設備指紋識別
+      parameters:
+      - description: 登入資料
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.EnterpriseLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登入成功，返回完整令牌信息
+          schema:
+            properties:
+              data:
+                properties:
+                  access_token:
+                    type: string
+                  device_token:
+                    type: string
+                  expires_in:
+                    type: integer
+                  refresh_token:
+                    type: string
+                  session:
+                    properties:
+                      device_name:
+                        type: string
+                      device_type:
+                        type: string
+                      expires_at:
+                        type: string
+                      id:
+                        type: string
+                      last_activity:
+                        type: string
+                    type: object
+                  user:
+                    properties:
+                      avatar:
+                        type: string
+                      created_at:
+                        type: string
+                      email:
+                        type: string
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      updated_at:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                type: object
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "400":
+          description: 請求格式錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 認證失敗
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      summary: 用戶登入
+      tags:
+      - 認證
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: 登出當前用戶，撤銷當前會話的所有令牌
+      parameters:
+      - description: 登出請求
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            refresh_token:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登出成功
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "400":
+          description: 請求格式錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 用戶登出
+      tags:
+      - 認證
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: 使用 refresh token 獲取新的 access token 和 refresh token
+      parameters:
+      - description: 刷新令牌請求
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            refresh_token:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 刷新成功，返回新的令牌對
+          schema:
+            properties:
+              data:
+                properties:
+                  access_token:
+                    type: string
+                  device_token:
+                    type: string
+                  expires_in:
+                    type: integer
+                  refresh_token:
+                    type: string
+                  session:
+                    properties:
+                      device_name:
+                        type: string
+                      device_type:
+                        type: string
+                      expires_at:
+                        type: string
+                      id:
+                        type: string
+                      last_activity:
+                        type: string
+                    type: object
+                  user:
+                    properties:
+                      avatar:
+                        type: string
+                      email:
+                        type: string
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                type: object
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "400":
+          description: 請求格式錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: refresh token 無效或已過期
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      summary: 刷新訪問令牌
+      tags:
+      - 認證
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: 創建新的用戶帳號
+      parameters:
+      - description: 註冊資料
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            email:
+              type: string
+            name:
+              type: string
+            password:
+              type: string
+            username:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 註冊成功
+          schema:
+            properties:
+              data:
+                properties:
+                  avatar:
+                    type: string
+                  created_at:
+                    type: string
+                  email:
+                    type: string
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  updated_at:
+                    type: string
+                  username:
+                    type: string
+                type: object
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "400":
+          description: 請求格式錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "409":
+          description: 用戶已存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      summary: 用戶註冊
+      tags:
+      - 認證
+  /categories:
+    get:
+      description: 獲取系統中所有可用的交易分類
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 分類列表
+          schema:
+            properties:
+              data:
+                items:
+                  properties:
+                    created_at:
+                      type: string
+                    description:
+                      type: string
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    updated_at:
+                      type: string
+                  type: object
+                type: array
+              error:
+                type: boolean
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 獲取分類列表
+      tags:
+      - 分類
+  /groups:
+    get:
+      description: 獲取當前用戶加入的所有群組，包含創建者資訊
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 群組列表
+          schema:
+            properties:
+              data:
+                items:
+                  properties:
+                    created_at:
+                      type: string
+                    created_by:
+                      type: integer
+                    creator:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        username:
+                          type: string
+                      type: object
+                    description:
+                      type: string
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    updated_at:
+                      type: string
+                  type: object
+                type: array
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 獲取用戶群組列表
+      tags:
+      - 群組
+    post:
+      consumes:
+      - application/json
+      description: 創建一個新的群組，創建者自動成為群組管理員
+      parameters:
+      - description: 群組資料
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            description:
+              type: string
+            name:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 群組創建成功
+          schema:
+            properties:
+              data:
+                properties:
+                  created_at:
+                    type: string
+                  created_by:
+                    type: integer
+                  creator:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                  description:
+                    type: string
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  updated_at:
+                    type: string
+                type: object
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "400":
+          description: 請求格式錯誤或群組名稱為空
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 創建新群組
+      tags:
+      - 群組
+  /groups/{id}:
+    delete:
+      description: 刪除群組及其所有相關資料，只有創建者可以執行此操作
+      parameters:
+      - description: 群組ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 群組刪除成功
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 只有群組創建者可以刪除群組
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 群組不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 刪除群組
+      tags:
+      - 群組
+    get:
+      description: 獲取群組的詳細信息，包含成員列表和當前用戶角色
+      parameters:
+      - description: 群組ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 群組詳細資訊
+          schema:
+            properties:
+              data:
+                properties:
+                  current_user_role:
+                    type: string
+                  group:
+                    properties:
+                      created_at:
+                        type: string
+                      created_by:
+                        type: integer
+                      creator:
+                        properties:
+                          id:
+                            type: integer
+                          name:
+                            type: string
+                          username:
+                            type: string
+                        type: object
+                      description:
+                        type: string
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      updated_at:
+                        type: string
+                    type: object
+                  members:
+                    items:
+                      properties:
+                        avatar:
+                          type: string
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        username:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              error:
+                type: boolean
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 不是群組成員
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 群組不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 獲取群組詳細資訊
+      tags:
+      - 群組
+    put:
+      consumes:
+      - application/json
+      description: 更新群組的名稱和描述，需要管理員權限
+      parameters:
+      - description: 群組ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新資料
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            description:
+              type: string
+            name:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 群組更新成功
+          schema:
+            properties:
+              data:
+                properties:
+                  created_at:
+                    type: string
+                  created_by:
+                    type: integer
+                  creator:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                  description:
+                    type: string
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  updated_at:
+                    type: string
+                type: object
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "400":
+          description: 請求格式錯誤或群組名稱為空
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 沒有管理員權限
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 群組不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新群組資訊
+      tags:
+      - 群組
+  /groups/{id}/balance:
+    get:
+      description: 獲取群組中每個成員的總欠情況
+      parameters:
+      - description: 群組ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 群組總欠情況
+          schema:
+            properties:
+              data:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    net_balance:
+                      type: number
+                    user_id:
+                      type: integer
+                    username:
+                      type: string
+                  type: object
+                type: array
+              error:
+                type: boolean
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 不是群組成員
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 群組不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 獲取群組總欠
+      tags:
+      - 交易
+  /groups/{id}/members:
+    post:
+      consumes:
+      - application/json
+      description: 向群組添加新成員，需要管理員權限
+      parameters:
+      - description: 群組ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 成員資料，role可選值：member, admin
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            role:
+              type: string
+            user_id:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 成員添加成功
+          schema:
+            properties:
+              data:
+                properties:
+                  role:
+                    type: string
+                  user_id:
+                    type: integer
+                type: object
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "400":
+          description: 請求格式錯誤或用戶ID為空
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 沒有管理員權限
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 群組或用戶不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "409":
+          description: 用戶已是群組成員
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 添加群組成員
+      tags:
+      - 群組
+  /groups/{id}/members/{userId}:
+    delete:
+      description: 從群組中移除成員，需要管理員權限，不能移除創建者
+      parameters:
+      - description: 群組ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 要移除的用戶ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成員移除成功
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 沒有管理員權限或不能移除創建者
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 群組或成員不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 移除群組成員
+      tags:
+      - 群組
+  /groups/{id}/settlement-suggestions:
+    get:
+      description: 根據群組成員的欠債情況生成最佳結算建議
+      parameters:
+      - description: 群組ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 結算建議列表
+          schema:
+            properties:
+              data:
+                items:
+                  properties:
+                    amount:
+                      type: number
+                    from_user:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        username:
+                          type: string
+                      type: object
+                    from_user_id:
+                      type: integer
+                    to_user:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        username:
+                          type: string
+                      type: object
+                    to_user_id:
+                      type: integer
+                  type: object
+                type: array
+              error:
+                type: boolean
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 不是群組成員
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 群組不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 獲取群組結算建議
+      tags:
+      - 結算
+  /groups/{id}/transactions:
+    get:
+      description: 獲取指定群組的所有交易記錄
+      parameters:
+      - description: 群組ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 群組交易列表
+          schema:
+            properties:
+              data:
+                items:
+                  properties:
+                    amount:
+                      type: number
+                    category:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                      type: object
+                    category_id:
+                      type: integer
+                    created_at:
+                      type: string
+                    creator:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        username:
+                          type: string
+                      type: object
+                    description:
+                      type: string
+                    group:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                      type: object
+                    group_id:
+                      type: integer
+                    id:
+                      type: integer
+                    paid_by:
+                      type: integer
+                    payer:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        username:
+                          type: string
+                      type: object
+                    receipt_url:
+                      type: string
+                    split_type:
+                      type: string
+                    splits:
+                      items:
+                        properties:
+                          amount:
+                            type: number
+                          id:
+                            type: integer
+                          percentage:
+                            type: number
+                          user:
+                            properties:
+                              id:
+                                type: integer
+                              name:
+                                type: string
+                              username:
+                                type: string
+                            type: object
+                          user_id:
+                            type: integer
+                        type: object
+                      type: array
+                    updated_at:
+                      type: string
+                  type: object
+                type: array
+              error:
+                type: boolean
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 不是群組成員
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 群組不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 獲取群組交易列表
+      tags:
+      - 交易
+  /settlements:
+    get:
+      description: 獲取當前用戶相關的所有結算記錄（作為付款者或收款者）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 結算記錄列表
+          schema:
+            properties:
+              data:
+                items:
+                  properties:
+                    amount:
+                      type: number
+                    created_at:
+                      type: string
+                    from_user:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        username:
+                          type: string
+                      type: object
+                    from_user_id:
+                      type: integer
+                    group:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                      type: object
+                    group_id:
+                      type: integer
+                    id:
+                      type: integer
+                    status:
+                      type: string
+                    to_user:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        username:
+                          type: string
+                      type: object
+                    to_user_id:
+                      type: integer
+                    updated_at:
+                      type: string
+                  type: object
+                type: array
+              error:
+                type: boolean
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 獲取結算記錄列表
+      tags:
+      - 結算
+    post:
+      consumes:
+      - application/json
+      description: 在群組中創建一筆新的結算記錄
+      parameters:
+      - description: 結算資料
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            amount:
+              type: number
+            from_user_id:
+              type: integer
+            group_id:
+              type: integer
+            to_user_id:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 結算創庺成功
+          schema:
+            properties:
+              data:
+                properties:
+                  amount:
+                    type: number
+                  created_at:
+                    type: string
+                  from_user:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                  from_user_id:
+                    type: integer
+                  group:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                    type: object
+                  group_id:
+                    type: integer
+                  id:
+                    type: integer
+                  status:
+                    type: string
+                  to_user:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                  to_user_id:
+                    type: integer
+                  updated_at:
+                    type: string
+                type: object
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "400":
+          description: 請求格式錯誤或參數無效
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 不是群組成員
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 創建結算記錄
+      tags:
+      - 結算
+  /settlements/{id}:
+    delete:
+      description: 取消結算記錄，只有創庺者可以取消
+      parameters:
+      - description: 結算ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 結算取消成功
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 只有創庺者可以取消結算
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 結算記錄不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "409":
+          description: 結算已經是已付或已取消狀態
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 取消結算記錄
+      tags:
+      - 結算
+  /settlements/{id}/paid:
+    put:
+      description: 將結算記錄標記為已付款，只有付款者可以執行
+      parameters:
+      - description: 結算ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 標記成功
+          schema:
+            properties:
+              data:
+                properties:
+                  amount:
+                    type: number
+                  created_at:
+                    type: string
+                  from_user:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                  from_user_id:
+                    type: integer
+                  group:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                    type: object
+                  group_id:
+                    type: integer
+                  id:
+                    type: integer
+                  status:
+                    type: string
+                  to_user:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                  to_user_id:
+                    type: integer
+                  updated_at:
+                    type: string
+                type: object
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 只有付款者可以標記為已付
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 結算記錄不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "409":
+          description: 結算已經是已付或已取消狀態
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 標記結算為已付
+      tags:
+      - 結算
+  /transactions:
+    get:
+      description: 獲取當前用戶參與的所有交易（作為付款者或分帳參與者）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 交易列表
+          schema:
+            properties:
+              data:
+                items:
+                  properties:
+                    amount:
+                      type: number
+                    category:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                      type: object
+                    category_id:
+                      type: integer
+                    created_at:
+                      type: string
+                    creator:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        username:
+                          type: string
+                      type: object
+                    description:
+                      type: string
+                    group:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                      type: object
+                    group_id:
+                      type: integer
+                    id:
+                      type: integer
+                    paid_by:
+                      type: integer
+                    payer:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        username:
+                          type: string
+                      type: object
+                    receipt_url:
+                      type: string
+                    split_type:
+                      type: string
+                    splits:
+                      items:
+                        properties:
+                          amount:
+                            type: number
+                          id:
+                            type: integer
+                          percentage:
+                            type: number
+                          user:
+                            properties:
+                              id:
+                                type: integer
+                              name:
+                                type: string
+                              username:
+                                type: string
+                            type: object
+                          user_id:
+                            type: integer
+                        type: object
+                      type: array
+                    updated_at:
+                      type: string
+                  type: object
+                type: array
+              error:
+                type: boolean
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 獲取交易列表
+      tags:
+      - 交易
+    post:
+      consumes:
+      - application/json
+      description: 在群組中創建一筆新的交易，支援多種分帳方式
+      parameters:
+      - description: 交易資料
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            amount:
+              type: number
+            category_id:
+              type: integer
+            description:
+              type: string
+            group_id:
+              type: integer
+            paid_by:
+              type: integer
+            receipt_url:
+              type: string
+            split_type:
+              type: string
+            splits:
+              items:
+                properties:
+                  amount:
+                    type: number
+                  percentage:
+                    type: number
+                  user_id:
+                    type: integer
+                type: object
+              type: array
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 交易創建成功
+          schema:
+            properties:
+              data:
+                properties:
+                  amount:
+                    type: number
+                  category:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                    type: object
+                  category_id:
+                    type: integer
+                  created_at:
+                    type: string
+                  creator:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                  description:
+                    type: string
+                  group:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                    type: object
+                  group_id:
+                    type: integer
+                  id:
+                    type: integer
+                  paid_by:
+                    type: integer
+                  payer:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                  receipt_url:
+                    type: string
+                  split_type:
+                    type: string
+                  splits:
+                    items:
+                      properties:
+                        amount:
+                          type: number
+                        id:
+                          type: integer
+                        percentage:
+                          type: number
+                        user:
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                            username:
+                              type: string
+                          type: object
+                        user_id:
+                          type: integer
+                      type: object
+                    type: array
+                  updated_at:
+                    type: string
+                type: object
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "400":
+          description: 請求格式錯誤或參數無效
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 不是群組成員
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 創建新交易
+      tags:
+      - 交易
+  /transactions/{id}:
+    delete:
+      description: 刪除交易，只有創庺者可以刪除
+      parameters:
+      - description: 交易ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 交易刪除成功
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 只有創庺者可以刪除交易
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 交易不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 刪除交易
+      tags:
+      - 交易
+    get:
+      description: 獲取指定交易的詳細信息，包括分帳詳情
+      parameters:
+      - description: 交易ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 交易詳細資訊
+          schema:
+            properties:
+              data:
+                properties:
+                  amount:
+                    type: number
+                  category:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                    type: object
+                  category_id:
+                    type: integer
+                  created_at:
+                    type: string
+                  creator:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                  description:
+                    type: string
+                  group:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                    type: object
+                  group_id:
+                    type: integer
+                  id:
+                    type: integer
+                  paid_by:
+                    type: integer
+                  payer:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                  receipt_url:
+                    type: string
+                  split_type:
+                    type: string
+                  splits:
+                    items:
+                      properties:
+                        amount:
+                          type: number
+                        id:
+                          type: integer
+                        percentage:
+                          type: number
+                        user:
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                            username:
+                              type: string
+                          type: object
+                        user_id:
+                          type: integer
+                      type: object
+                    type: array
+                  updated_at:
+                    type: string
+                type: object
+              error:
+                type: boolean
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 不是群組成員
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 交易不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 獲取交易詳細資訊
+      tags:
+      - 交易
+    put:
+      consumes:
+      - application/json
+      description: 更新交易信息，只有創庺者可以更新
+      parameters:
+      - description: 交易ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新資料
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            amount:
+              type: number
+            category_id:
+              type: integer
+            description:
+              type: string
+            receipt_url:
+              type: string
+            splits:
+              items:
+                properties:
+                  amount:
+                    type: number
+                  percentage:
+                    type: number
+                  user_id:
+                    type: integer
+                type: object
+              type: array
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 交易更新成功
+          schema:
+            properties:
+              data:
+                properties:
+                  amount:
+                    type: number
+                  category:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                    type: object
+                  category_id:
+                    type: integer
+                  created_at:
+                    type: string
+                  creator:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                  description:
+                    type: string
+                  group:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                    type: object
+                  group_id:
+                    type: integer
+                  id:
+                    type: integer
+                  paid_by:
+                    type: integer
+                  payer:
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      username:
+                        type: string
+                    type: object
+                  receipt_url:
+                    type: string
+                  split_type:
+                    type: string
+                  splits:
+                    items:
+                      properties:
+                        amount:
+                          type: number
+                        id:
+                          type: integer
+                        percentage:
+                          type: number
+                        user:
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                            username:
+                              type: string
+                          type: object
+                        user_id:
+                          type: integer
+                      type: object
+                    type: array
+                  updated_at:
+                    type: string
+                type: object
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "400":
+          description: 請求格式錯誤或參數無效
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "403":
+          description: 只有創庺者可以更新交易
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 交易不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新交易
+      tags:
+      - 交易
+  /users/fcm-token:
+    post:
+      consumes:
+      - application/json
+      description: 更新用戶的 Firebase Cloud Messaging 推播令牌
+      parameters:
+      - description: FCM Token 資料
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            fcm_token:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: FCM Token 更新成功
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "400":
+          description: 請求格式錯誤或 FCM Token 為空
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 更新失敗
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新 FCM 推播令牌
+      tags:
+      - 用戶
+  /users/me:
+    get:
+      description: 獲取當前登入用戶的個人資料
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用戶資料
+          schema:
+            properties:
+              data:
+                properties:
+                  avatar:
+                    type: string
+                  email:
+                    type: string
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  username:
+                    type: string
+                type: object
+              error:
+                type: boolean
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "404":
+          description: 用戶不存在
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 獲取個人資料
+      tags:
+      - 用戶
+    put:
+      consumes:
+      - application/json
+      description: 更新當前登入用戶的個人資料
+      parameters:
+      - description: 更新資料
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            avatar:
+              type: string
+            name:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            properties:
+              data:
+                properties:
+                  avatar:
+                    type: string
+                  email:
+                    type: string
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  username:
+                    type: string
+                type: object
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "400":
+          description: 請求格式錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "401":
+          description: 未授權
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+        "500":
+          description: 服務器內部錯誤
+          schema:
+            properties:
+              error:
+                type: boolean
+              message:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新個人資料
+      tags:
+      - 用戶
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: 在 header 中加入 "Bearer <token>"
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

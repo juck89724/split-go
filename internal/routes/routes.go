@@ -6,6 +6,7 @@ import (
 	"split-go/internal/middleware"
 
 	"github.com/gofiber/fiber/v2"
+	fiberSwagger "github.com/swaggo/fiber-swagger"
 	"gorm.io/gorm"
 )
 
@@ -18,6 +19,9 @@ func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 			"message": "Split Go API is running",
 		})
 	})
+
+	// Swagger 文檔路由
+	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
 	// API 路由群組
 	api := app.Group("/api/v1")

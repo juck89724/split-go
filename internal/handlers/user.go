@@ -18,6 +18,15 @@ func NewUserHandler(db *gorm.DB) *UserHandler {
 }
 
 // GetProfile 獲取用戶資料
+// @Summary 獲取個人資料
+// @Description 獲取當前登入用戶的個人資料
+// @Tags 用戶
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} object{error=bool,data=object{id=int,name=string,email=string,username=string,avatar=string}} "用戶資料"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 404 {object} object{error=bool,message=string} "用戶不存在"
+// @Router /users/me [get]
 func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 	userID := middleware.GetUserIDFromContext(c)
 	if userID == 0 {
@@ -39,6 +48,18 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 }
 
 // UpdateProfile 更新用戶資料
+// @Summary 更新個人資料
+// @Description 更新當前登入用戶的個人資料
+// @Tags 用戶
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body object{name=string,avatar=string} true "更新資料"
+// @Success 200 {object} object{error=bool,message=string,data=object{id=int,name=string,email=string,username=string,avatar=string}} "更新成功"
+// @Failure 400 {object} object{error=bool,message=string} "請求格式錯誤"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 500 {object} object{error=bool,message=string} "服務器內部錯誤"
+// @Router /users/me [put]
 func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 	userID := middleware.GetUserIDFromContext(c)
 	if userID == 0 {
@@ -91,6 +112,18 @@ type UpdateFCMTokenRequest struct {
 }
 
 // UpdateFCMToken 更新 FCM Token
+// @Summary 更新 FCM 推播令牌
+// @Description 更新用戶的 Firebase Cloud Messaging 推播令牌
+// @Tags 用戶
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body object{fcm_token=string} true "FCM Token 資料"
+// @Success 200 {object} object{error=bool,message=string} "FCM Token 更新成功"
+// @Failure 400 {object} object{error=bool,message=string} "請求格式錯誤或 FCM Token 為空"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Failure 500 {object} object{error=bool,message=string} "更新失敗"
+// @Router /users/fcm-token [post]
 func (h *UserHandler) UpdateFCMToken(c *fiber.Ctx) error {
 	// 驗證用戶身份
 	user, err := middleware.GetCurrentUser(c, h.db)

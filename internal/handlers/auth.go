@@ -37,6 +37,16 @@ type EnterpriseLoginRequest struct {
 }
 
 // Register 用戶註冊
+// @Summary 用戶註冊
+// @Description 創建新的用戶帳號
+// @Tags 認證
+// @Accept json
+// @Produce json
+// @Param request body object{email=string,username=string,password=string,name=string} true "註冊資料"
+// @Success 201 {object} object{error=bool,message=string,data=object{id=int,email=string,username=string,name=string,avatar=string,created_at=string,updated_at=string}} "註冊成功"
+// @Failure 400 {object} object{error=bool,message=string} "請求格式錯誤"
+// @Failure 409 {object} object{error=bool,message=string} "用戶已存在"
+// @Router /auth/register [post]
 func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	var req struct {
 		Email    string `json:"email" validate:"required,email"`
@@ -109,6 +119,16 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 }
 
 // Login 企業級用戶登入
+// @Summary 用戶登入
+// @Description 使用 email 和密碼登入系統，支援設備指紋識別
+// @Tags 認證
+// @Accept json
+// @Produce json
+// @Param request body EnterpriseLoginRequest true "登入資料"
+// @Success 200 {object} object{error=bool,message=string,data=object{access_token=string,refresh_token=string,device_token=string,expires_in=int,user=object{id=int,email=string,username=string,name=string,avatar=string,created_at=string,updated_at=string},session=object{id=string,device_name=string,device_type=string,last_activity=string,expires_at=string}}} "登入成功，返回完整令牌信息"
+// @Failure 400 {object} object{error=bool,message=string} "請求格式錯誤"
+// @Failure 401 {object} object{error=bool,message=string} "認證失敗"
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var req EnterpriseLoginRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -170,6 +190,16 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 }
 
 // RefreshToken 智能刷新 token
+// @Summary 刷新訪問令牌
+// @Description 使用 refresh token 獲取新的 access token 和 refresh token
+// @Tags 認證
+// @Accept json
+// @Produce json
+// @Param request body object{refresh_token=string} true "刷新令牌請求"
+// @Success 200 {object} object{error=bool,message=string,data=object{access_token=string,refresh_token=string,device_token=string,expires_in=int,user=object{id=int,email=string,username=string,name=string,avatar=string},session=object{id=string,device_name=string,device_type=string,last_activity=string,expires_at=string}}} "刷新成功，返回新的令牌對"
+// @Failure 400 {object} object{error=bool,message=string} "請求格式錯誤"
+// @Failure 401 {object} object{error=bool,message=string} "refresh token 無效或已過期"
+// @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 	type RefreshRequest struct {
 		RefreshToken string `json:"refresh_token" validate:"required"`
@@ -208,6 +238,16 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 }
 
 // DeviceRefresh 設備認證降級刷新
+// @Summary 設備級刷新令牌
+// @Description 使用設備指紋進行刷新，適用於記住登入狀態的場景
+// @Tags 認證
+// @Accept json
+// @Produce json
+// @Param request body object{device_fingerprint=object{ip_address=string,user_agent=string,screen_resolution=string,timezone=string,language=string,platform=string}} true "設備刷新請求"
+// @Success 200 {object} object{error=bool,message=string,data=object{access_token=string,refresh_token=string,device_token=string,expires_in=int,user=object{id=int,email=string,username=string,name=string,avatar=string},session=object{id=string,device_name=string,device_type=string,last_activity=string,expires_at=string}}} "刷新成功，返回新的令牌對"
+// @Failure 400 {object} object{error=bool,message=string} "請求格式錯誤"
+// @Failure 401 {object} object{error=bool,message=string} "設備認證失敗"
+// @Router /auth/device-refresh [post]
 func (h *AuthHandler) DeviceRefresh(c *fiber.Ctx) error {
 	type DeviceRefreshRequest struct {
 		DeviceFingerprint services.DeviceFingerprint `json:"device_fingerprint" validate:"required"`
@@ -250,6 +290,17 @@ func (h *AuthHandler) DeviceRefresh(c *fiber.Ctx) error {
 }
 
 // Logout 用戶登出
+// @Summary 用戶登出
+// @Description 登出當前用戶，撤銷當前會話的所有令牌
+// @Tags 認證
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body object{refresh_token=string} true "登出請求"
+// @Success 200 {object} object{error=bool,message=string} "登出成功"
+// @Failure 400 {object} object{error=bool,message=string} "請求格式錯誤"
+// @Failure 401 {object} object{error=bool,message=string} "未授權"
+// @Router /auth/logout [post]
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	sessionID := middleware.GetSessionIDFromContext(c)
 	userID := middleware.GetUserIDFromContext(c)
