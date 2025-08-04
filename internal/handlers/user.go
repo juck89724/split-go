@@ -86,9 +86,34 @@ func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 	)
 }
 
+type UpdateFCMTokenRequest struct {
+	FCMToken string `json:"fcm_token" validate:"required"`
+}
+
 // UpdateFCMToken 更新 FCM Token
 func (h *UserHandler) UpdateFCMToken(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusNotImplemented).JSON(
-		responses.ErrorResponse("功能尚未實現"),
+	// 驗證用戶身份
+	user, err := middleware.GetCurrentUser(c, h.db)
+	if err != nil {
+		return err
+	}
+
+	// 解析請求資料
+	var req UpdateFCMTokenRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(
+			responses.ErrorResponse("無效的請求格式"),
+		)
+	}
+
+	// 更新 FCM Token
+	if err := h.db.Model(&user).Update("fcm_token", req.FCMToken).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(
+			responses.ErrorResponse("更新 FCM Token 失敗"),
+		)
+	}
+
+	return c.JSON(
+		responses.SuccessWithMessageResponse("FCM Token 更新成功", nil),
 	)
 }
