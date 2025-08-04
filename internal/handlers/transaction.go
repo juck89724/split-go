@@ -13,14 +13,16 @@ import (
 )
 
 type TransactionHandler struct {
-	db             *gorm.DB
-	balanceService *services.BalanceService
+	db                *gorm.DB
+	balanceService    *services.BalanceService
+	validationService *services.ValidationService
 }
 
 func NewTransactionHandler(db *gorm.DB) *TransactionHandler {
 	return &TransactionHandler{
-		db:             db,
-		balanceService: services.NewBalanceService(db),
+		db:                db,
+		balanceService:    services.NewBalanceService(db),
+		validationService: services.NewValidationService(db),
 	}
 }
 
@@ -80,7 +82,7 @@ func (h *TransactionHandler) CreateTransaction(c *fiber.Ctx) error {
 	}
 
 	// 4. 驗證付款者是群組成員
-	if err := h.validateGroupMember(h.db, req.GroupID, req.PaidBy); err != nil {
+	if err := h.validationService.ValidateGroupMember(req.GroupID, req.PaidBy); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(
 			responses.ErrorResponse(err.Error()),
 		)
@@ -92,7 +94,7 @@ func (h *TransactionHandler) CreateTransaction(c *fiber.Ctx) error {
 		splitUserIDs = append(splitUserIDs, split.UserID)
 	}
 
-	if err := h.validateSplitUsers(h.db, req.GroupID, splitUserIDs); err != nil {
+	if err := h.validationService.ValidateMultipleGroupMembers(req.GroupID, splitUserIDs); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(
 			responses.ErrorResponse(err.Error()),
 		)
@@ -422,35 +424,6 @@ type SplitCalculation struct {
 	Percentage float64
 }
 
-// validateGroupMember 驗證用戶是否為群組成員
-func (h *TransactionHandler) validateGroupMember(db *gorm.DB, groupID, userID uint) error {
-	var member models.GroupMember
-	if err := db.Where("group_id = ? AND user_id = ?", groupID, userID).
-		First(&member).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return errors.New("付款者不是群組成員")
-		}
-		return errors.New("驗證群組成員失敗")
-	}
-	return nil
-}
-
-// validateSplitUsers 驗證分帳用戶是否都是群組成員
-func (h *TransactionHandler) validateSplitUsers(db *gorm.DB, groupID uint, userIDs []uint) error {
-	var memberCount int64
-	if err := db.Model(&models.GroupMember{}).
-		Where("group_id = ? AND user_id IN ?", groupID, userIDs).
-		Count(&memberCount).Error; err != nil {
-		return errors.New("驗證分帳用戶失敗")
-	}
-
-	if int(memberCount) != len(userIDs) {
-		return errors.New("部分分帳用戶不是群組成員")
-	}
-
-	return nil
-}
-
 // calculateSplits 通用的分帳計算函數
 func (h *TransactionHandler) calculateSplits(splitType models.SplitType, totalAmount float64, splits []SplitCalculation) ([]SplitCalculation, error) {
 	switch splitType {
@@ -529,7 +502,7 @@ func (h *TransactionHandler) updateBasicFields(tx *gorm.DB, existingTransaction 
 	}
 	if req.PaidBy > 0 {
 		// 驗證新的付款者是群組成員
-		if err := h.validateGroupMember(tx, existingTransaction.GroupID, req.PaidBy); err != nil {
+		if err := h.validationService.ValidateGroupMember(existingTransaction.GroupID, req.PaidBy); err != nil {
 			return err
 		}
 		updateData["paid_by"] = req.PaidBy
@@ -574,7 +547,7 @@ func (h *TransactionHandler) updateSplits(tx *gorm.DB, transactionID uint, exist
 			splitUserIDs = append(splitUserIDs, split.UserID)
 		}
 
-		if err := h.validateSplitUsers(tx, existingTransaction.GroupID, splitUserIDs); err != nil {
+		if err := h.validationService.ValidateMultipleGroupMembers(existingTransaction.GroupID, splitUserIDs); err != nil {
 			return err
 		}
 	} else {

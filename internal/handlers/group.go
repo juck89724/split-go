@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"strconv"
 	"time"
 
 	"split-go/internal/middleware"
@@ -424,13 +423,10 @@ func (h *GroupHandler) RemoveMember(c *fiber.Ctx) error {
 		return err
 	}
 
-	// 解析要移除的用戶ID
-	userIDStr := c.Params("userId")
-	userID, err := strconv.ParseUint(userIDStr, 10, 32)
-	if err != nil || userID == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(
-			responses.ErrorResponse("無效的用戶ID"),
-		)
+	// 解析要移除的用戶 ID
+	userID, err := middleware.ParseUserIDFromParams(c)
+	if err != nil {
+		return err
 	}
 
 	// 驗證當前用戶是否為群組管理員

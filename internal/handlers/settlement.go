@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"errors"
 	"math"
-	"strconv"
 	"time"
 
 	"split-go/internal/middleware"
@@ -16,14 +14,16 @@ import (
 )
 
 type SettlementHandler struct {
-	db             *gorm.DB
-	balanceService *services.BalanceService
+	db                *gorm.DB
+	balanceService    *services.BalanceService
+	validationService *services.ValidationService
 }
 
 func NewSettlementHandler(db *gorm.DB) *SettlementHandler {
 	return &SettlementHandler{
-		db:             db,
-		balanceService: services.NewBalanceService(db),
+		db:                db,
+		balanceService:    services.NewBalanceService(db),
+		validationService: services.NewValidationService(db),
 	}
 }
 
@@ -86,7 +86,7 @@ func (h *SettlementHandler) CreateSettlement(c *fiber.Ctx) error {
 	}
 
 	// 驗證收款者是群組成員
-	if err := h.validateGroupMember(req.GroupID, req.ToUserID); err != nil {
+	if err := h.validationService.ValidateGroupMember(req.GroupID, req.ToUserID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(
 			responses.ErrorResponse(err.Error()),
 		)
@@ -142,17 +142,15 @@ func (h *SettlementHandler) MarkAsPaid(c *fiber.Ctx) error {
 	}
 
 	// 獲取結算 ID
-	settlementID, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	settlementID, err := middleware.ParseSettlementIDFromParams(c)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(
-			responses.ErrorResponse("無效的結算 ID"),
-		)
+		return err
 	}
 
 	// 查詢結算記錄
 	var settlement models.Settlement
 	if err := h.db.Preload("Group").Preload("FromUser").Preload("ToUser").
-		First(&settlement, settlementID).Error; err != nil {
+		First(&settlement, uint(settlementID)).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.Status(fiber.StatusNotFound).JSON(
 				responses.ErrorResponse("結算記錄不存在"),
@@ -205,16 +203,14 @@ func (h *SettlementHandler) CancelSettlement(c *fiber.Ctx) error {
 	}
 
 	// 獲取結算 ID
-	settlementID, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	settlementID, err := middleware.ParseSettlementIDFromParams(c)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(
-			responses.ErrorResponse("無效的結算 ID"),
-		)
+		return err
 	}
 
 	// 查詢結算記錄
 	var settlement models.Settlement
-	if err := h.db.First(&settlement, settlementID).Error; err != nil {
+	if err := h.db.First(&settlement, uint(settlementID)).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.Status(fiber.StatusNotFound).JSON(
 				responses.ErrorResponse("結算記錄不存在"),
@@ -253,21 +249,19 @@ func (h *SettlementHandler) CancelSettlement(c *fiber.Ctx) error {
 
 func (h *SettlementHandler) GetSettlementSuggestions(c *fiber.Ctx) error {
 	// 獲取群組 ID
-	groupID, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	groupID, err := middleware.ParseGroupIDFromParams(c)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(
-			responses.ErrorResponse("無效的群組 ID"),
-		)
+		return err
 	}
 
 	// 驗證用戶是群組成員
-	_, err = middleware.RequireGroupMember(c, h.db, uint(groupID))
+	_, err = middleware.RequireGroupMember(c, h.db, groupID)
 	if err != nil {
 		return err
 	}
 
 	// 計算群組內每個用戶的平衡
-	balances, err := h.balanceService.CalculateGroupBalances(uint(groupID))
+	balances, err := h.balanceService.CalculateGroupBalances(groupID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			responses.ErrorResponse("計算群組平衡失敗"),
@@ -284,19 +278,6 @@ func (h *SettlementHandler) GetSettlementSuggestions(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(responses.SuccessResponse(suggestionResponses))
-}
-
-// validateGroupMember 驗證用戶是否為群組成員
-func (h *SettlementHandler) validateGroupMember(groupID, userID uint) error {
-	var member models.GroupMember
-	if err := h.db.Where("group_id = ? AND user_id = ?", groupID, userID).
-		First(&member).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return errors.New("用戶不是群組成員")
-		}
-		return errors.New("驗證群組成員失敗")
-	}
-	return nil
 }
 
 // generateSettlementSuggestions 生成結算建議（使用貪心算法最小化轉帳次數）
